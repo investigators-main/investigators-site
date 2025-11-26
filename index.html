@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>The Investigators</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+    .hidden { display: none; }
+    .box { background: white; padding: 20px; margin-top: 20px; border-radius: 8px; }
+    button { padding: 10px 15px; cursor: pointer; }
+    input, textarea { width: 100%; padding: 8px; margin-top: 8px; }
+    h2 { margin-top: 0; }
+    .member { padding: 10px; border-bottom: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+<h1>🕵️‍♂️ THE INVESTIGATORS</h1>
+<p>Welcome to our official website.</p>
+
+<button onclick="showJoinForm()">I Want to Join</button>
+<button onclick="showLogin()">Admin Login</button>
+
+<!-- JOIN FORM -->
+<div id="joinForm" class="box hidden">
+  <h2>Join The Investigators</h2>
+  <input id="joinName" placeholder="Who are you?">
+  <textarea id="joinWhy" placeholder="Why do you want to join?"></textarea>
+  <input id="joinUser" placeholder="Choose a username">
+  <input id="joinPass" placeholder="Choose a password" type="password">
+  <button onclick="submitJoin()">Submit</button>
+</div>
+
+<!-- LOGIN FORM -->
+<div id="loginForm" class="box hidden">
+  <h2>Admin Login</h2>
+  <input id="adminUser" placeholder="Username">
+  <input id="adminPass" placeholder="Password" type="password">
+  <button onclick="adminLogin()">Login</button>
+  <p id="loginError" style="color:red;"></p>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="box hidden">
+  <h2>Admin Panel</h2>
+
+  <button onclick="showRequests()">View Join Requests</button>
+  <button onclick="showMembers()">View Members</button>
+  <button onclick="showCaseForm()">New Case</button>
+
+  <div id="requests" class="hidden"></div>
+  <div id="members" class="hidden"></div>
+  <div id="caseForm" class="hidden">
+    <h3>Submit a New Case</h3>
+    <textarea id="caseText" placeholder="Describe the case..."></textarea>
+    <button onclick="submitCase()">Send Case</button>
+  </div>
+
+  <h3>Submitted Cases</h3>
+  <div id="caseList"></div>
+</div>
+
+<script>
+/* Load LocalStorage Data */
+let requests = JSON.parse(localStorage.getItem("joinRequests") || "[]");
+let members = JSON.parse(localStorage.getItem("members") || "[]");
+let cases = JSON.parse(localStorage.getItem("cases") || "[]");
+
+/* Show Join Form */
+function showJoinForm() {
+  hideAll();
+  document.getElementById("joinForm").classList.remove("hidden");
+}
+
+/* Show Login */
+function showLogin() {
+  hideAll();
+  document.getElementById("loginForm").classList.remove("hidden");
+}
+
+/* Hide All Content */
+function hideAll() {
+  ["joinForm", "loginForm", "adminPanel"].forEach(id => {
+    document.getElementById(id).classList.add("hidden");
+  });
+}
+
+/* Submit Join Request */
+function submitJoin() {
+  let obj = {
+    name: joinName.value,
+    why: joinWhy.value,
+    user: joinUser.value,
+    pass: joinPass.value
+  };
+  requests.push(obj);
+  localStorage.setItem("joinRequests", JSON.stringify(requests));
+  alert("Your request has been submitted!");
+  hideAll();
+}
+
+/* Admin Login */
+function adminLogin() {
+  if (adminUser.value === "wassim&jordan" && adminPass.value === "the investigators") {
+    hideAll();
+    document.getElementById("adminPanel").classList.remove("hidden");
+    loadCases();
+  } else {
+    document.getElementById("loginError").innerText = "Incorrect login.";
+  }
+}
+
+/* Show Requests */
+function showRequests() {
+  let div = document.getElementById("requests");
+  div.innerHTML = "<h3>Join Requests</h3>";
+  div.classList.remove("hidden");
+  document.getElementById("members").classList.add("hidden");
+  document.getElementById("caseForm").classList.add("hidden");
+
+  requests.forEach((r, i) => {
+    div.innerHTML += `
+      <div class="member">
+        <b>Name:</b> ${r.name}<br>
+        <b>Why:</b> ${r.why}<br>
+        <button onclick="accept(${i})">Accept</button>
+        <button onclick="decline(${i})">Decline</button>
+      </div>`;
+  });
+}
+
+/* Accept Request */
+function accept(i) {
+  members.push(requests[i]);
+  requests.splice(i, 1);
+  saveData();
+  showRequests();
+}
+
+/* Decline Request */
+function decline(i) {
+  requests.splice(i, 1);
+  saveData();
+  showRequests();
+}
+
+/* Show Members */
+function showMembers() {
+  let div = document.getElementById("members");
+  div.innerHTML = "<h3>Members</h3>";
+  div.classList.remove("hidden");
+  document.getElementById("requests").classList.add("hidden");
+  document.getElementById("caseForm").classList.add("hidden");
+
+  members.forEach((m, i) => {
+    div.innerHTML += `
+      <div class="member">
+        <b>${m.name}</b> (${m.user})<br>
+        <button onclick="removeMember(${i})">Remove</button>
+      </div>`;
+  });
+}
+
+/* Remove Member */
+function removeMember(i) {
+  members.splice(i, 1);
+  saveData();
+  showMembers();
+}
+
+/* Show Case Form */
+function showCaseForm() {
+  document.getElementById("caseForm").classList.remove("hidden");
+  document.getElementById("requests").classList.add("hidden");
+  document.getElementById("members").classList.add("hidden");
+}
+
+/* Submit Case */
+function submitCase() {
+  cases.push(caseText.value);
+  saveData();
+  loadCases();
+  alert("Case submitted!");
+  caseText.value = "";
+}
+
+/* Load Cases */
+function loadCases() {
+  let list = document.getElementById("caseList");
+  list.innerHTML = "";
+  cases.forEach(c => {
+    list.innerHTML += `<div class="member"><b>Case:</b> ${c}</div>`;
+  });
+}
+
+/* Save to LocalStorage */
+function saveData() {
+  localStorage.setItem("joinRequests", JSON.stringify(requests));
+  localStorage.setItem("members", JSON.stringify(members));
+  localStorage.setItem("cases", JSON.stringify(cases));
+}
+</script>
+
+</body>
+</html>
