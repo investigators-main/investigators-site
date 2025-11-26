@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>The Investigators</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #fff9c4;
+        text-align: center;
+        padding: 20px;
+    }
+    .box {
+        border: 2px solid black;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 450px;
+        background: white;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        margin: 10px;
+    }
+    input, textarea {
+        width: 90%;
+        padding: 10px;
+        margin: 10px 0;
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+
+<h1>THE INVESTIGATORS</h1>
+<h3>Little Detectives Solving Big Crimes</h3>
+<img src="YOUR_POSTER_IMAGE_URL_HERE" width="250">
+
+<br><br>
+<button onclick="showJoinForm()">I Want to Join</button>
+<button onclick="showLoginForm()">Login</button>
+
+<!-- JOIN FORM -->
+<div id="joinForm" class="box" style="display:none;">
+    <h2>Join The Investigators</h2>
+    <input id="joinName" placeholder="Who are you?">
+    <textarea id="joinReason" placeholder="Why do you want to join?"></textarea>
+    <input id="joinUser" placeholder="Choose a username">
+    <input id="joinPass" placeholder="Choose a password" type="password">
+    <button onclick="submitJoin()">Submit</button>
+</div>
+
+<!-- LOGIN FORM -->
+<div id="loginForm" class="box" style="display:none;">
+    <h2>Admin Login</h2>
+    <input id="loginUser" placeholder="Username">
+    <input id="loginPass" placeholder="Password" type="password">
+    <button onclick="adminLogin()">Login</button>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="adminPanel" class="box" style="display:none;">
+    <h2>Admin Panel</h2>
+
+    <h3>New Recruits</h3>
+    <div id="recruitList"></div>
+
+    <hr>
+    <h3>Add a New Case</h3>
+    <textarea id="caseText" placeholder="Describe the new case..."></textarea>
+    <button onclick="submitCase()">Submit Case</button>
+
+    <h3>Submitted Cases</h3>
+    <div id="caseList"></div>
+
+</div>
+
+<script>
+// Show forms
+function showJoinForm() {
+    document.getElementById("joinForm").style.display = "block";
+    document.getElementById("loginForm").style.display = "none";
+}
+function showLoginForm() {
+    document.getElementById("loginForm").style.display = "block";
+    document.getElementById("joinForm").style.display = "none";
+}
+
+// Submit Join Request
+function submitJoin() {
+    let recruit = {
+        name: document.getElementById("joinName").value,
+        reason: document.getElementById("joinReason").value,
+        username: document.getElementById("joinUser").value
+    };
+
+    let recruits = JSON.parse(localStorage.getItem("recruits") || "[]");
+    recruits.push(recruit);
+    localStorage.setItem("recruits", JSON.stringify(recruits));
+
+    alert("Your request has been sent!");
+    document.getElementById("joinForm").reset;
+}
+
+// Admin Login
+function adminLogin() {
+    let user = document.getElementById("loginUser").value;
+    let pass = document.getElementById("loginPass").value;
+
+    if (user === "wassim&jordan" && pass === "the investigators") {
+        document.getElementById("adminPanel").style.display = "block";
+        document.getElementById("loginForm").style.display = "none";
+        loadRecruits();
+        loadCases();
+    } else {
+        alert("Incorrect login.");
+    }
+}
+
+// Load Recruits
+function loadRecruits() {
+    let list = JSON.parse(localStorage.getItem("recruits") || "[]");
+    let area = document.getElementById("recruitList");
+    area.innerHTML = "";
+
+    list.forEach(r => {
+        area.innerHTML += `<p><b>${r.name}</b><br>${r.reason}<br>Username: ${r.username}</p><hr>`;
+    });
+}
+
+// Submit Case
+function submitCase() {
+    let caseText = document.getElementById("caseText").value;
+
+    let cases = JSON.parse(localStorage.getItem("cases") || "[]");
+    cases.push(caseText);
+    localStorage.setItem("cases", JSON.stringify(cases));
+
+    alert("Case submitted!");
+    loadCases();
+}
+
+// Load Cases
+function loadCases() {
+    let list = JSON.parse(localStorage.getItem("cases") || "[]");
+    let area = document.getElementById("caseList");
+    area.innerHTML = "";
+
+    list.forEach(c => {
+        area.innerHTML += `<p>${c}</p><hr>`;
+    });
+}
+</script>
+
+</body>
+</html>
