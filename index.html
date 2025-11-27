@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The Investigators</title>
+<style>
+  /* Full-page poster background */
+  html,body { height:100%; margin:0; font-family: Arial, Helvetica, sans-serif; }
+  body{
+    background-image: url('poster.jpg'); /* put your poster image in the repo and name it poster.jpg */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+    color: #111;
+  }
+
+  /* dim overlay so boxes are readable */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background: rgba(255,255,255,0.85); /* faded poster effect */
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* Site container */
+  .container{
+    position:relative;
+    z-index:1;
+    max-width:920px;
+    margin:24px auto;
+    padding:18px;
+  }
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+  header h1{ margin:0; font-size:28px; letter-spacing:1px; }
+
+  /* White cards that sit on top of poster */
+  .card{
+    background: white;
+    border-radius:10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    padding:18px;
+    margin-top:16px;
+  }
+
+  /* layout */
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .col { flex:1 1 300px; min-width:260px; }
+
+  input, textarea {
+    width:100%;
+    padding:10px;
+    margin:8px 0 12px;
+    border:1px solid #bbb;
+    border-radius:6px;
+    font-size:15px;
+    box-sizing:border-box;
+  }
+  button{
+    padding:10px 14px;
+    border:none;
+    background:#222;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+  }
+  .btn-ghost { background:transparent; color:#111; border:1px solid #222; }
+  .muted { color:#666; font-size:13px; }
+  .danger { background:#c0392b; }
+  .small { padding:6px 8px; font-size:13px; }
+  .error { color:#b00020; font-size:13px; margin-top:-6px; margin-bottom:8px; }
+
+  /* lists */
+  .item { padding:10px 8px; border-bottom:1px solid #eee; }
+  .item b { display:block; }
+  .controls { display:flex; gap:8px; margin-top:8px; }
+
+  /* responsive */
+  @media (max-width:520px){ header h1{font-size:20px} }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🕵️‍♀️ THE INVESTIGATORS</h1>
+      <div>
+        <button onclick="openJoin()">I want to join</button>
+        <button onclick="openMemberLogin()">Member Login</button>
+        <button onclick="openAdminLogin()">Admin Login</button>
+      </div>
+    </header>
+
+    <!-- Main poster/info card -->
+    <section class="card">
+      <h2 style="margin-top:0">Little detectives solving big crimes</h2>
+      <p class="muted">Sign up to join the team. Admins will accept or decline requests.</p>
+    </section>
+
+    <!-- Join form -->
+    <section id="joinCard" class="card" style="display:none;">
+      <h3>Join The Investigators</h3>
+      <div>
+        <input id="join_name" placeholder="Your full name" autocomplete="name">
+        <textarea id="join_why" rows="3" placeholder="Why do you want to join?"></textarea>
+        <input id="join_user" placeholder="Choose a username" autocomplete="username">
+        <input id="join_pass" type="password" placeholder="Choose a password" autocomplete="new-password">
+        <div id="userExistsMsg" class="error" style="display:none;">Username already used. Try another.</div>
+        <button onclick="submitJoin()">Submit request</button>
+        <button class="btn-ghost small" onclick="closeJoin()">Cancel</button>
+      </div>
+    </section>
+
+    <!-- Member login -->
+    <section id="memberLoginCard" class="card" style="display:none;">
+      <h3>Member Login</h3>
+      <input id="member_user" placeholder="Username">
+      <input id="member_pass" type="password" placeholder="Password">
+      <div id="memberLoginError" class="error" style="display:none;"></div>
+      <div style="display:flex; gap:8px;">
+        <button onclick="memberLogin()">Login</button>
+        <button class="btn-ghost small" onclick="closeMemberLogin()">Cancel</button>
+      </div>
+    </section>
+
+    <!-- Admin login -->
+    <section id="adminLoginCard" class="card" style="display:none;">
+      <h3>Admin Login</h3>
+      <input id="admin_user" placeholder="Admin username">
+      <input id="admin_pass" type="password" placeholder="Admin password">
+      <div id="adminLoginError" class="error" style="display:none;"></div>
+      <div style="display:flex; gap:8px;">
+        <button onclick="adminLogin()">Login as admin</button>
+        <button class="btn-ghost small" onclick="closeAdminLogin()">Cancel</button>
+      </div>
+      <p class="muted">Admin credentials are provided to owners only.</p>
+    </section>
+
+    <!-- Admin panel -->
+    <section id="adminPanel" class="card" style="display:none;">
+      <h3>Admin Panel</h3>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:260px;">
+          <h4>Pending join requests</h4>
+          <div id="requestsList"></div>
+        </div>
+
+        <div style="flex:1; min-width:260px;">
+          <h4>Members</h4>
+          <div id="membersList"></div>
+        </div>
+
+        <div style="flex-basis:100%">
+          <h4>Create a new case</h4>
+          <textarea id="case_text" rows="3" placeholder="Describe the new case (title + short description)"></textarea>
+          <div style="display:flex; gap:8px;">
+            <button onclick="createCase()">Create case</button>
+            <button class="btn-ghost small" onclick="adminLogout()">Logout</button>
+          </div>
+        </div>
+
+        <div style="flex-basis:100%">
+          <h4>Submitted cases</h4>
+          <div id="casesList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Member dashboard -->
+    <section id="memberPanel" class="card" style="display:none;">
+      <h3>Member Dashboard</h3>
+      <div id="memberWelcome" class="muted"></div>
+      <h4>Current cases</h4>
+      <div id="memberCases"></div>
+      <div style="margin-top:12px;">
+        <button onclick="memberLogout()" class="btn-ghost small">Logout</button>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+/* --- Data keys & initial load --- */
+const KEY_REQ = 'investigators_requests';
+const KEY_MEM = 'investigators_members';
+const KEY_CASE = 'investigators_cases';
+
+// Admin credentials (static for this demo)
+const ADMIN_USER = 'wassim&jordan';
+const ADMIN_PASS = 'the investigators';
+
+// load arrays from localStorage or empty
+let requests = JSON.parse(localStorage.getItem(KEY_REQ) || '[]');
+let members  = JSON.parse(localStorage.getItem(KEY_MEM) || '[]');
+let casesArr = JSON.parse(localStorage.getItem(KEY_CASE) || '[]');
+
+/* --- Helpers to save --- */
+function saveAll(){
+  localStorage.setItem(KEY_REQ, JSON.stringify(requests));
+  localStorage.setItem(KEY_MEM, JSON.stringify(members));
+  localStorage.setItem(KEY_CASE, JSON.stringify(casesArr));
+}
+
+/* --- UI toggles --- */
+function hideAllCards(){
+  ['joinCard','memberLoginCard','adminLoginCard','adminPanel','memberPanel'].forEach(id=>{
+    document.getElementById(id).style.display='none';
+  });
+  // clear errors
+  document.getElementById('userExistsMsg').style.display='none';
+  document.getElementById('memberLoginError').style.display='none';
+  document.getElementById('adminLoginError').style.display='none';
+}
+
+function openJoin(){ hideAllCards(); document.getElementById('joinCard').style.display='block'; }
+function closeJoin(){ document.getElementById('joinCard').style.display='none'; }
+function openMemberLogin(){ hideAllCards(); document.getElementById('memberLoginCard').style.display='block'; }
+function closeMemberLogin(){ document.getElementById('memberLoginCard').style.display='none'; }
+function openAdminLogin(){ hideAllCards(); document.getElementById('adminLoginCard').style.display='block'; }
+function closeAdminLogin(){ document.getElementById('adminLoginCard').style.display='none'; }
+
+/* --- Join request logic with username check --- */
+function usernameExists(username){
+  username = (username||'').trim().toLowerCase();
+  if(!username) return false;
+  // check approved members
+  for(let m of members){
+    if((m.user||'').toLowerCase() === username) return true;
+  }
+  // check pending requests
+  for(let r of requests){
+    if((r.user||'').toLowerCase() === username) return true;
+  }
+  return false;
+}
+
+function submitJoin(){
+  const name = document.getElementById('join_name').value.trim();
+  const why  = document.getElementById('join_why').value.trim();
+  const user = document.getElementById('join_user').value.trim();
+  const pass = document.getElementById('join_pass').value;
+
+  if(!name || !user || !pass){
+    alert('Please fill name, username and password.');
+    return;
+  }
+
+  if(usernameExists(user)){
+    document.getElementById('userExistsMsg').style.display = 'block';
+    return;
+  }
+
+  // push to requests (password stored in localStorage here for demo only)
+  requests.push({ name, why, user, pass });
+  saveAll();
+  alert('Request submitted. Admins will review it.');
+  // clear form & hide
+  document.getElementById('join_name').value = '';
+  document.getElementById('join_why').value = '';
+  document.getElementById('join_user').value = '';
+  document.getElementById('join_pass').value = '';
+  closeJoin();
+}
+
+/* --- Admin functions --- */
+function adminLogin(){
+  const user = document.getElementById('admin_user').value.trim();
+  const pass = document.getElementById('admin_pass').value;
+  if(user === ADMIN_USER && pass === ADMIN_PASS){
+    hideAllCards();
+    document.getElementById('adminPanel').style.display='block';
+    renderRequests();
+    renderMembers();
+    renderCases();
+    document.getElementById('admin_user').value='';
+    document.getElementById('admin_pass').value='';
+    document.getElementById('adminLoginError').style.display='none';
+  } else {
+    const e = document.getElementById('adminLoginError');
+    e.innerText = 'Incorrect admin credentials.';
+    e.style.display='block';
+  }
+}
+
+function adminLogout(){
+  hideAllCards();
+  alert('Logged out of admin.');
+}
+
+/* Render lists */
+function renderRequests(){
+  const div = document.getElementById('requestsList');
+  if(requests.length===0){
+    div.innerHTML = '<div class="muted">No pending requests.</div>';
+    return;
+  }
+  div.innerHTML = '';
+  requests.forEach((r,i) => {
+    const node = document.createElement('div');
+    node.className='item';
+    node.innerHTML = `<b>${escapeHtml(r.name)}</b> (@${escapeHtml(r.user)})<div class="muted">${escapeHtml(r.why)}</div>`;
+    const controls = document.createElement('div'); controls.className='controls';
+    const acceptBtn = document.createElement('button'); acceptBtn.textContent='Accept';
+    acceptBtn.onclick = ()=>{ acceptRequest(i); };
+    const declineBtn = document.createElement('button'); declineBtn.textContent='Decline';
+    declineBtn.className='danger small'; declineBtn.onclick = ()=>{ declineRequest(i); };
+    controls.appendChild(acceptBtn); controls.appendChild(declineBtn);
+    node.appendChild(controls);
+    div.appendChild(node);
+  });
+}
+
+function renderMembers(){
+  const div = document.getElementById('membersList');
+  if(members.length===0){
+    div.innerHTML = '<div class="muted">No members yet.</div>';
+    return;
+  }
+  div.innerHTML = '';
+  members.forEach((m,i) => {
+    const node = document.createElement('div'); node.className='item';
+    node.innerHTML = `<b>${escapeHtml(m.name)}</b> (@${escapeHtml(m.user)})`;
+    const rm = document.createElement('button'); rm.textContent='Remove'; rm.className='danger small';
+    rm.onclick = ()=>{ if(confirm('Remove this member?')){ removeMember(i);} };
+    node.appendChild(rm);
+    div.appendChild(node);
+  });
+}
+
+/* Accept / Decline / Remove */
+function acceptRequest(index){
+  const r = requests[index];
+  // move into members
+  members.push(r);
+  requests.splice(index,1);
+  saveAll();
+  renderRequests();
+  renderMembers();
+  alert('Request accepted.');
+}
+function declineRequest(index){
+  if(!confirm('Decline this request?')) return;
+  requests.splice(index,1);
+  saveAll();
+  renderRequests();
+}
+function removeMember(index){
+  members.splice(index,1);
+  saveAll();
+  renderMembers();
+}
+
+/* --- Cases --- */
+function createCase(){
+  const text = document.getElementById('case_text').value.trim();
+  if(!text){ alert('Please add case text.'); return; }
+  // Add timestamp + text
+  casesArr.unshift({ text, ts: Date.now() });
+  document.getElementById('case_text').value='';
+  saveAll();
+  renderCases();
+  alert('Case created and available to members.');
+}
+function renderCases(){
+  const div = document.getElementById('casesList');
+  if(casesArr.length===0){ div.innerHTML = '<div class="muted">No cases yet.</div>'; return; }
+  div.innerHTML = '';
+  casesArr.forEach((c,i) => {
+    const node = document.createElement('div'); node.className='item';
+    const date = new Date(c.ts).toLocaleString();
+    node.innerHTML = `<b>${escapeHtml(c.text)}</b><div class="muted">${date}</div>`;
+    div.appendChild(node);
+  });
+}
+
+/* --- Member login & dashboard --- */
+function memberLogin(){
+  const u = document.getElementById('member_user').value.trim();
+  const p = document.getElementById('member_pass').value;
+  const err = document.getElementById('memberLoginError');
+  const found = members.find(m => (m.user||'') === u && (m.pass||'') === p);
+  if(!found){
+    err.innerText = 'Invalid member username or password.';
+    err.style.display='block';
+    return;
+  }
+  // show dashboard
+  hideAllCards();
+  document.getElementById('memberPanel').style.display='block';
+  document.getElementById('memberWelcome').innerText = `Welcome, ${found.name} (@${found.user})`;
+  renderMemberCases();
+  // clear fields
+  document.getElementById('member_user').value=''; document.getElementById('member_pass').value='';
+  err.style.display='none';
+  // store current member in sessionStorage for this tab
+  sessionStorage.setItem('invest_current_member', JSON.stringify({ user: found.user, name: found.name }));
+}
+
+function renderMemberCases(){
+  const div = document.getElementById('memberCases');
+  if(casesArr.length===0){ div.innerHTML = '<div class="muted">No cases yet.</div>'; return; }
+  div.innerHTML = '';
+  casesArr.forEach(c => {
+    const node = document.createElement('div'); node.className='item';
+    const date = new Date(c.ts).toLocaleString();
+    node.innerHTML = `<b>${escapeHtml(c.text)}</b><div class="muted">${date}</div>`;
+    div.appendChild(node);
+  });
+}
+
+function memberLogout(){
+  sessionStorage.removeItem('invest_current_member');
+  hideAllCards();
+  alert('Logged out.');
+}
+
+/* --- Utilities --- */
+function escapeHtml(s){
+  if(!s) return '';
+  return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+}
+
+/* --- Initialize: show nothing else --- */
+hideAllCards();
+renderRequests();
+renderMembers();
+renderCases();
+</script>
+</body>
+</html>
