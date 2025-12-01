@@ -1,0 +1,244 @@
+<script>
+// ---------------------------
+//   INVESTIGATORS – FULL JS
+// ---------------------------
+
+// LocalStorage Keys
+const MEMBERS_KEY = "inv_members";
+const REQUESTS_KEY = "inv_requests";
+const CASES_KEY = "inv_cases";
+
+// Admin login (your credentials)
+const ADMIN_USER = "wassim&jordan";
+const ADMIN_PASS = "the investigators";
+
+// Load saved data or create empty arrays
+let members = JSON.parse(localStorage.getItem(MEMBERS_KEY)) || [];
+let requests = JSON.parse(localStorage.getItem(REQUESTS_KEY)) || [];
+let cases = JSON.parse(localStorage.getItem(CASES_KEY)) || [];
+
+// Save functions
+function saveMembers() { localStorage.setItem(MEMBERS_KEY, JSON.stringify(members)); }
+function saveRequests() { localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests)); }
+function saveCases() { localStorage.setItem(CASES_KEY, JSON.stringify(cases)); }
+
+// -----------------------
+// PANEL CONTROL
+// -----------------------
+function hideAll() {
+    document.querySelectorAll(".panel").forEach(p => p.style.display = "none");
+}
+
+// -----------------------
+// JOIN REQUEST
+// -----------------------
+function submitJoin() {
+    let name = document.getElementById("joinName").value.trim();
+    let reason = document.getElementById("joinReason").value.trim();
+    let username = document.getElementById("joinUsername").value.trim();
+    let password = document.getElementById("joinPassword").value.trim();
+    let msg = document.getElementById("joinMsg");
+
+    if (!name || !reason || !username || !password) {
+        msg.innerText = "Please fill all fields.";
+        msg.style.color = "red";
+        return;
+    }
+
+    // Username already exists in members OR requests → reject
+    if (
+        members.some(m => m.username === username) ||
+        requests.some(r => r.username === username)
+    ) {
+        msg.innerText = "Username already used!";
+        msg.style.color = "red";
+        return;
+    }
+
+    requests.push({ name, reason, username, password });
+    saveRequests();
+
+    msg.innerText = "Request sent!";
+    msg.style.color = "green";
+
+    document.getElementById("joinForm").reset();
+}
+
+// -----------------------
+// MEMBER LOGIN
+// -----------------------
+function loginMember() {
+    let user = document.getElementById("memberUsername").value.trim();
+    let pass = document.getElementById("memberPassword").value.trim();
+    let msg = document.getElementById("memberMsg");
+
+    let m = members.find(mem =>
+        mem.username === user && mem.password === pass
+    );
+
+    if (!m) {
+        msg.innerText = "Incorrect username or password.";
+        msg.style.color = "red";
+        return;
+    }
+
+    hideAll();
+    document.getElementById("memberPanel").style.display = "block";
+    showCurrentCase();
+}
+
+// -----------------------
+// ADMIN LOGIN
+// -----------------------
+function loginAdmin() {
+    let u = document.getElementById("adminUser").value.trim();
+    let p = document.getElementById("adminPass").value.trim();
+    let msg = document.getElementById("adminMsg");
+
+    if (u === ADMIN_USER && p === ADMIN_PASS) {
+        hideAll();
+        document.getElementById("adminPanel").style.display = "block";
+        updateAdminPanels();
+    } else {
+        msg.innerText = "Incorrect admin login.";
+        msg.style.color = "red";
+    }
+}
+
+// -----------------------
+// ADMIN: render everything
+// -----------------------
+function updateAdminPanels() {
+    updateRequests();
+    updateMembers();
+    updateCases();
+}
+
+// ----- REQUESTS -----
+function updateRequests() {
+    let box = document.getElementById("requestsBox");
+
+    if (requests.length === 0) {
+        box.innerHTML = "<p>No requests.</p>";
+        return;
+    }
+
+    box.innerHTML = requests.map((r, i) => `
+        <div class="item-box">
+            <b>${r.name}</b> (${r.username})<br>
+            Reason: ${r.reason}<br><br>
+            <button onclick="acceptRequest(${i})">Accept</button>
+            <button onclick="declineRequest(${i})">Decline</button>
+        </div>
+    `).join("");
+}
+
+function acceptRequest(i) {
+    let r = requests[i];
+    members.push({ name: r.name, username: r.username, password: r.password });
+    requests.splice(i, 1);
+    saveMembers();
+    saveRequests();
+    updateAdminPanels();
+}
+
+function declineRequest(i) {
+    requests.splice(i, 1);
+    saveRequests();
+    updateAdminPanels();
+}
+
+// ----- MEMBERS -----
+function updateMembers() {
+    let box = document.getElementById("membersBox");
+
+    if (members.length === 0) {
+        box.innerHTML = "<p>No members yet.</p>";
+        return;
+    }
+
+    box.innerHTML = members.map((m, i) => `
+        <div class="item-box">
+            <b>${m.name}</b> (${m.username})
+            <button onclick="removeMember(${i})">Remove</button>
+        </div>
+    `).join("");
+}
+
+function removeMember(i) {
+    members.splice(i, 1);
+    saveMembers();
+    updateAdminPanels();
+}
+
+// -----------------------
+// CASE MANAGEMENT
+// -----------------------
+function updateCases() {
+    let box = document.getElementById("caseBox");
+
+    if (cases.length === 0) {
+        box.innerHTML = "<p>No cases yet.</p>";
+        return;
+    }
+
+    box.innerHTML = cases.map((c, i) => `
+        <div class="item-box">
+            <b>Case #${i + 1}</b><br>${c.text}<br>
+            ${c.done ? "<i>(Completed)</i><br>" : ""}
+            ${!c.done ? `<button onclick="markCaseDone(${i})">Mark Complete</button>` : ""}
+            <button onclick="deleteCase(${i})">Remove</button>
+        </div>
+    `).join("");
+}
+
+function addCase() {
+    let text = document.getElementById("newCaseText").value.trim();
+    if (!text) return;
+
+    cases.push({ text, done: false });
+    saveCases();
+    document.getElementById("newCaseText").value = "";
+    updateCases();
+}
+
+function markCaseDone(i) {
+    cases[i].done = true;
+    saveCases();
+    updateCases();
+}
+
+function deleteCase(i) {
+    cases.splice(i, 1);
+    saveCases();
+    updateCases();
+}
+
+// -----------------------
+// MEMBER VIEW
+// -----------------------
+function showCurrentCase() {
+    let box = document.getElementById("memberCaseBox");
+    let active = cases.filter(c => !c.done);
+
+    box.innerHTML = active.length
+        ? active.map(c => `<div class="item-box">${c.text}</div>`).join("")
+        : "<p>No active cases.</p>";
+}
+
+function showCaseHistory() {
+    hideAll();
+    document.getElementById("historyPanel").style.display = "block";
+
+    let box = document.getElementById("historyBox");
+    let done = cases.filter(c => c.done);
+
+    box.innerHTML = done.length
+        ? done.map((c, i) => `
+            <div class="item-box">
+                <b>Case #${i + 1}</b><br>${c.text}
+            </div>
+        `).join("")
+        : "<p>No completed cases yet.</p>";
+}
+</script>
